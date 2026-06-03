@@ -6,6 +6,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
+from sklearn.cluster import KMeans
 
 def load_data(filepath):
     return pd.read_csv(filepath)
@@ -56,6 +57,91 @@ def create_customer_features(df):
     )
 
     return agg
+
+
+def create_rfm_features(df):
+
+    df["TransactionStartTime"] = pd.to_datetime(
+        df["TransactionStartTime"]
+    )
+
+    snapshot_date = (
+        df["TransactionStartTime"].max()
+        + pd.Timedelta(days=1)
+    )
+
+    rfm = (
+        df.groupby("CustomerId")
+        .agg(
+            Recency=(
+                "TransactionStartTime",
+                lambda x:
+                (snapshot_date - x.max()).days
+            ),
+            Frequency=(
+                "TransactionId",
+                "count"
+            ),
+            Monetary=(
+                "Value",
+                "sum"
+            )
+        )
+        .reset_index()
+    )
+
+    return rfm
+
+def create_risk_labels(df):
+
+    rfm = create_rfm_features(df)
+
+    scaler = StandardScaler()
+
+    rfm_scaled = scaler.fit_transform(
+        rfm[["Recency", "Frequency", "Monetary"]]
+    )
+
+    kmeans = KMeans(
+        n_clusters=3,
+        random_state=42,
+        n_init=10
+    )
+
+    rfm["cluster"] = (
+        kmeans.fit_predict(rfm_scaled)
+    )
+
+    cluster_summary = (
+        rfm.groupby("cluster")
+        [["Recency", "Frequency", "Monetary"]]
+        .mean()
+    )
+
+    print(cluster_summary)
+
+    high_risk_cluster = (
+        cluster_summary["Recency"]
+        .idxmax()
+    )
+
+    rfm["is_high_risk"] = (
+        rfm["cluster"] == high_risk_cluster
+    ).astype(int)
+
+    return rfm
+
+def merge_risk_labels(df):
+
+    rfm = create_risk_labels(df)
+
+    df = df.merge(
+        rfm[["CustomerId", "is_high_risk"]],
+        on="CustomerId",
+        how="left"
+    )
+
+    return df
 
 def engineer_features(df):
 
@@ -177,20 +263,33 @@ def process_data(df):
     return processed_df
 
 
+# if __name__ == "__main__":
+
+#     df = load_data(
+#         "data/raw/data.csv"
+#     )
+
+#     processed_df = process_data(df)
+
+#     processed_df.to_csv(
+#         "data/processed/processed_data.csv",
+#         index=False
+#     )
+
+#     print(processed_df.shape)
+
+#     print(processed_df.head())
+#     print(processed_df.columns.tolist())
+
+
 if __name__ == "__main__":
 
-    df = load_data(
-        "data/raw/data.csv"
-    )
+    df = load_data("data/raw/data.csv")
 
-    processed_df = process_data(df)
+    df = merge_risk_labels(df)
 
-    processed_df.to_csv(
-        "data/processed/processed_data.csv",
+    print(df["is_high_risk"].value_counts())
+    df.to_csv(
+        "data/processed/labeled_data.csv",
         index=False
     )
-
-    print(processed_df.shape)
-
-    print(processed_df.head())
-    print(processed_df.columns.tolist())
