@@ -284,12 +284,34 @@ def process_data(df):
 
 if __name__ == "__main__":
 
-    df = load_data("data/raw/data.csv")
+    raw_df = load_data("data/raw/data.csv")
+    processed_df = process_data(raw_df)
+    rfm = create_risk_labels(raw_df)
+    processed_df["CustomerId"] = (
+        raw_df["CustomerId"].values
+    )
 
-    df = merge_risk_labels(df)
-
-    print(df["is_high_risk"].value_counts())
-    df.to_csv(
-        "data/processed/labeled_data.csv",
+    processed_df = processed_df.merge(
+        rfm[
+            ["CustomerId",
+            "is_high_risk"]
+        ],
+        on="CustomerId",
+        how="left"
+    )
+    processed_df = processed_df.drop(
+        columns=["CustomerId"]
+    )
+    processed_df.to_csv(
+        "data/processed/model_data.csv",
         index=False
     )
+    model_df = pd.read_csv(
+        "data/processed/model_data.csv"
+    )
+
+    print(model_df.shape)
+
+    print(model_df.columns[:10])
+
+    print(model_df["is_high_risk"].value_counts())
