@@ -55,32 +55,27 @@ def evaluate_model(
     )
 
     metrics = {
-        "accuracy":
-            accuracy_score(
+        "accuracy": accuracy_score(
                 y_test,
                 predictions
             ),
 
-        "precision":
-            precision_score(
+        "precision": precision_score(
                 y_test,
                 predictions
             ),
 
-        "recall":
-            recall_score(
+        "recall": recall_score(
                 y_test,
                 predictions
             ),
 
-        "f1":
-            f1_score(
+        "f1": f1_score(
                 y_test,
                 predictions
             ),
 
-        "roc_auc":
-            roc_auc_score(
+        "roc_auc": roc_auc_score(
                 y_test,
                 probabilities
             )

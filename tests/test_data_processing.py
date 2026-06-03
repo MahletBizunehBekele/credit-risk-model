@@ -1,8 +1,10 @@
 import pandas as pd
 
 from src.data_processing import (
-    extract_time_features
+    extract_time_features,
+    create_customer_features
 )
+
 
 def test_extract_time_features():
 
@@ -17,11 +19,6 @@ def test_extract_time_features():
     assert "transaction_day" in result.columns
     assert "transaction_month" in result.columns
     assert "transaction_year" in result.columns
-
-
-from src.data_processing import (
-    create_customer_features
-)
 
 def test_create_customer_features():
 
