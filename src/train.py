@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 import joblib
+from mlflow import register_model
 
 from sklearn.metrics import (
     accuracy_score,
@@ -183,7 +184,12 @@ if __name__ == "__main__":
                 logistic,
                 "model"
             )
+            model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
 
+            mlflow.register_model(
+                model_uri=model_uri,
+                name="CreditRiskModel"
+            )
             print(metrics)
 
     with mlflow.start_run(
